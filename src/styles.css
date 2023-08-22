@@ -49,10 +49,6 @@ body {
     background-color: lightgray;
 }
 
-.breed-select {
-    width: 300px;
-    margin-left: 40%;
-}
 .cat-info {
     display: flex;
     justify-content: center;
