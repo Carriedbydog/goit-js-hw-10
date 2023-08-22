@@ -1,48 +1,94 @@
-// import axios from 'axios';
 import { fetchCatByBreed, fetchBreeds } from './cat-api';
+import Notiflix from 'notiflix';
+import SlimSelect from 'slim-select';
+import 'slim-select/dist/slimselect.css';
 
 const refs = {
   select: document.querySelector('.breed-select'),
-  //   loader: document.querySelector('.loader'),
-  //   error: document.querySelector('.error'),
+  loader: document.querySelector('.loader'),
+  error: document.querySelector('.error'),
   catInfo: document.querySelector('.cat-info'),
 };
-selectMarkup();
-function selectMarkup() {
-  return fetchBreeds().then(data => {
-    data.forEach(breed => {
-      const characteristics = document.createElement('option');
-      characteristics.value = breed.id;
-      characteristics.textContent = breed.name;
-      refs.select.appendChild(characteristics);
-    });
-  });
+
+// ===================================================================
+refs.select.addEventListener('change', onSearchCatbyBreed);
+refs.loader.classList.add('loader');
+refs.select.classList.add('visually-hidden');
+refs.error.classList.add('visually-hidden');
+// ===================================================================
+
+function onSearchCatbyBreed(e) {
+  const targetOption = e.target.value;
+  refs.loader.classList.remove('visually-hidden');
+  refs.catInfo.classList.add('visually-hidden');
+
+  fetchCatByBreed(targetOption)
+    .then(data => {
+      cardMarkup(data);
+      setTimeout(() => {
+        refs.catInfo.classList.remove('visually-hidden');
+      }, 300);
+    })
+    .catch(err => {
+      refs.catInfo.innerHTML = '';
+      Notiflix.Notify.failure(
+        'Oops! Something went wrong! Try choose another breed!'
+      );
+      console.log(err);
+    })
+    .finally(refs.loader.classList.add('visually-hidden'));
 }
 
-refs.select.addEventListener('change', onSearchCat);
-
-function onSearchCat() {
-  refs.catInfo.innerHTML = '';
-
-  fetchCatByBreed(refs.select.value)
-    .then(data => renderBreed(data))
-    .catch(error => {
-      console.log(error);
+fetchBreeds()
+  .then(data => {
+    refs.loader.classList.add('visually-hidden'),
+      refs.select.classList.remove('visually-hidden'),
+      refs.select.insertAdjacentHTML('beforeend', optionsMarkup(data));
+    new SlimSelect({
+      select: refs.select,
     });
+    setTimeout(() => {
+      refs.select.classList.remove('visually-hidden');
+    }, 500);
+    return data;
+  })
+  .catch(err => {
+    Notiflix.Notify.failure(
+      'Oops! Something went wrong! Try reloading the page!'
+    );
+
+    refs.loader.classList.add('visually-hidden');
+    refs.select.classList.remove('visually-hidden');
+    console.log(err);
+  })
+  .finally(refs.loader.classList.replace('loaderl', 'visually-hidden'));
+
+function optionsMarkup(arr) {
+  return arr
+    .map(el => `<option value="${el.reference_image_id}">${el.name}</option>`)
+    .join('');
 }
 
-function templateBreed({ image, description, temperament, name }) {
-  return `
-  <img src="${image}" alt="${name}" width="600" height="400"/>
-  <div>
-      <h2>${name}</h2>
-      <p>${description}</p>
-      <p>${temperament}</p>
+function cardMarkup(data) {
+  refs.loader.classList.remove('visually-hidden');
+  const {
+    url,
+    breeds: [{ name, description, temperament }],
+  } = data;
+
+  refs.catInfo.classList.add('visually-hidden');
+
+  refs.catInfo.innerHTML = `
+  <img class="cat-img" src="${url}" alt="${name}" width='500'/>
+    <div class="cat-card">
+    <h2 class="cat-title">Cat Breed</h2>
+    <p class="cat-characteristics">${name}</p>
+    <h2 class="cat-title">Description</h2>
+    <p class="cat-characteristics">${description}</p>
+    <h2 class="cat-title">Temperament</h2>
+    <p class="cat-characteristics">${temperament}</p>
     </div>
     `;
-}
-
-function renderBreed(data) {
-  const markup = templateBreed(data);
-  refs.catInfo.innerHTML = markup;
+  refs.loader.classList.add('visually-hidden');
+  refs.catInfo.classList.remove('visually-hiden');
 }
